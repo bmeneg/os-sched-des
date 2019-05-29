@@ -23,6 +23,9 @@ const (
     stopped = 2
 )
 
+// Global task id to simplify things
+var taskId uint = 0
+
 // This task structure considers only small amount of properties that are
 // necessary for single core machines. Other than that, there are bunch of
 // other properties to allow, i.e., multiple scheduler algorithms, which is not
@@ -48,15 +51,16 @@ func (tg *taskGroup) Length() uint {
 }
 
 func NewTask(procId uint, niceness int, execTime uint) *task {
-    var t *task
+    t := new(task)
     t.id = taskId + 1
     taskId++
+    t.tg = new(taskGroup)
     t.tg.id = procId
     t.tg.length++
     t.state = running
     t.nice = niceness
     t.birthTime = time.Now()
     t.desExecTime = execTime
-    fmt.Println("+ task %d has been created", t.id)
+    fmt.Printf("+ task %d has been created\n", t.id)
     return t
 }

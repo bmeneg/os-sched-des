@@ -7,7 +7,6 @@ import (
 )
 
 var processId uint = 1 // PID 0: init system, avoid to use it here
-var taskId uint = 0 // for simplicity it'll be unique to the entire system
 
 type core struct {
     id uint
@@ -26,13 +25,19 @@ func GetCore(id uint) *core {
     return cores[id]
 }
 
+func GetProcId() uint {
+    procId := processId
+    processId++
+    return procId
+}
+
 func NewCore() *core {
-    var c *core
+    c := new(core)
     c.id = uint(len(cores))
     c.timeslice = 100
     c.period = 48
     c.runqueue = rbt.NewWithIntComparator()
     cores = append(cores, c)
-    fmt.Println("+ core %d has been created", c.id)
+    fmt.Printf("+ core %d has been created\n", c.id)
     return c
 }

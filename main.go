@@ -6,7 +6,13 @@ import (
     des "github.com/agoussia/godes"
 )
 
-var entityArrival *des.UniformDistr = des.NewUniformDistr(true)
+// Probabilistic distribution definitions. Using "false" as argument on them
+// asures they won't have the same seed per run, thus we have an IID system.
+var entityArrival *des.UniformDistr = des.NewUniformDistr(false)
+var entityExecTime *des.ExpDistr = des.NewExpDistr(false)
+var entitySleepTime *des.ExpDistr = des.NewExpDistr(false)
+
+var avgExecTime float64 = 2000 // unit: ms
 
 type Entity struct {
     *des.Runner
@@ -23,8 +29,9 @@ type Server struct {
 }
 
 func (et *Entity) Run() {
-    fmt.Println("> entity %ud associated to task %ud (task group %ud)", et.cnt,
-        et.t.id, et.t.tg.id)
+    fmt.Printf("> [%-6.3f] entity %d associated to task %d (task group %d)\n",
+        des.GetSystemTime(), et.cnt, et.t.id, et.t.tg.id)
+    fmt.Printf("    > task %d: exectime = %d\n", et.t.id, et.t.desExecTime)
 }
 
 func main() {
@@ -33,7 +40,8 @@ func main() {
     des.Run()
     for {
         if des.GetSystemTime() < shutdownTime {
-            var t *task
+            etExecTime := uint(entityExecTime.Get(1 / avgExecTime))
+            t := NewTask(GetProcId(), 0, etExecTime)
             des.AddRunner(&Entity{&des.Runner{}, t, entityCnt})
             des.Advance(entityArrival.Get(0, 70))
             entityCnt++
