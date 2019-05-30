@@ -18,9 +18,9 @@ type taskGroup struct {
 
 // Available task states
 const (
-    running = 0
-    interruptable = 1 
-    stopped = 2
+    RUNNING = 0
+    INTERRUPTABLE = 1 
+    TERMINATED = 2
 )
 
 // Global task id to simplify things
@@ -57,7 +57,7 @@ func NewTask(procId uint, niceness int, execTime uint) *task {
     t.tg = new(taskGroup)
     t.tg.id = procId
     t.tg.length++
-    t.state = running
+    t.state = RUNNING
     t.nice = niceness
     t.birthTime = time.Now()
     t.desExecTime = execTime
