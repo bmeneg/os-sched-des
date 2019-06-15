@@ -21,7 +21,8 @@ class Task:
     STATE_TERMINATED = 3
     MAX_NICE = 19
     MIN_NICE = -20
-    EXEC_TIME_AVG = 2000
+    DEFAULT_WEIGHT = 1024
+    EXEC_TIME_AVG = 700
 
     task_id = 0
 
@@ -31,24 +32,28 @@ class Task:
         Task.task_id += 1
         self.state = Task.STATE_READY
         self.nice = niceness
-        self.weight = int(1024 / pow(1.25, self.nice))
+        self.weight = int(Task.DEFAULT_WEIGHT / pow(1.25, self.nice))
         self.birth_time = self.env.now
         self.exec_start = 0
-        self.sum_exec_time = 0
-        self.prev_exec_time = 0
         self.vruntime = 0
+        self.sum_exec_time = 0
+        self.interrupted = False
         self.exec_time = exec_time
-        print(f"+{self.id}: arrival = {self.birth_time}, nice = {self.nice},"
+        print(f"+t_{self.id}: arrival = {self.birth_time}, nice = {self.nice},"
               f" exec_time = {self.exec_time}")
 
     def scheduled(self):
+        self.interrupted = False
         self.state = Task.STATE_READY
 
     def running(self):
+        self.interrupted = False
         self.state = Task.STATE_RUNNING
 
     def sleep(self):
+        self.interrupted = True
         self.state = Task.STATE_INTERRUPTABLE
 
     def terminated(self):
+        self.interrupted = False
         self.state = Task.STATE_TERMINATED

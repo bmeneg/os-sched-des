@@ -3,10 +3,22 @@ class Interrupt:
         self.env = env
         self.model = model
         self.core = core
-        self.triggered_time = self.env.now
-        self.action = env.process(self.run())
+        self.irqs = []
+        env.process(self.sleep())
+        env.process(self.awake())
 
-    def run(self):
+    def sleep(self):
         while True:
-            self.core.action.interrupt()
-            yield self.env.timeout(self.model.get_sleep_event())
+            yield self.env.timeout(self.model.get_sleep_event_time())
+            if self.core.curr_task is not None:
+                self.core.action.interrupt()
+                self.irqs.append(self.env.now)
+
+    def awake(self):
+        while True:
+            yield self.env.timeout(self.model.get_awake_event_time())
+            if len(self.core.sleepqueue):
+                queue_item = yield self.core.sleepqueue.get()
+                task = queue_item.item
+                print(f"!AWAKE: task {task.id}")
+                self.core.schedule(task)
