@@ -1,19 +1,28 @@
 import random
 
+from task import Task
+
 
 class Model:
+    SIM_DURATION = 500
     NUM_TASKS = 10
 
-    TASK_EXEC_TIME_AVG = 2000
-    TASK_CTX_SWITCH_DURATION = 0.03
-    TASK_MAX_NICE = 19
-    TASK_MIN_NICE = -20
+    @staticmethod
+    def get_task_arrival():
+        return random.uniform(50, 100)
 
-    CORE_DEFAULT_TIMESLICE = 100
+    @staticmethod
+    def get_task_exec_time():
+        return random.expovariate(1 / Task.EXEC_TIME_AVG)
 
-    task_arrival_rdm = random.uniform(20, 50)
-    task_exec_time_rdm = random.expovariate(1 / TASK_EXEC_TIME_AVG)
-    task_niceness_rdm = random.uniform(TASK_MIN_NICE, TASK_MAX_NICE)
+    @staticmethod
+    def get_task_niceness():
+        return random.uniform(Task.MIN_NICE, Task.MAX_NICE)
 
-    event_sleep_rdm = random.expovariate(1)
-    event_awake_rdm = random.uniform(0, 5)
+    @staticmethod
+    def get_sleep_event():
+        return random.expovariate(1)
+
+    @staticmethod
+    def get_awake_event():
+        return random.uniform(0, 5)
