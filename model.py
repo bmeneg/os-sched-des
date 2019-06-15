@@ -9,20 +9,20 @@ class Model:
 
     @staticmethod
     def get_task_arrival():
-        return random.uniform(50, 100)
+        return int(random.uniform(50, 100))
 
     @staticmethod
     def get_task_exec_time():
-        return random.expovariate(1 / Task.EXEC_TIME_AVG)
+        return int(random.expovariate(1 / Task.EXEC_TIME_AVG))
 
     @staticmethod
     def get_task_niceness():
-        return random.uniform(Task.MIN_NICE, Task.MAX_NICE)
+        return int(random.uniform(Task.MIN_NICE, Task.MAX_NICE))
 
     @staticmethod
     def get_sleep_event():
-        return random.expovariate(1)
+        return int(random.expovariate(1))
 
     @staticmethod
     def get_awake_event():
-        return random.uniform(0, 5)
+        return int(random.uniform(0, 5))
