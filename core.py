@@ -1,9 +1,19 @@
 import simpy
 
 
+class QueueMonitor:
+    def __init__(self):
+        self.queue = []
+
+    def log_queue(self, timestamp, queue_len):
+        self.queue.append((timestamp, queue_len))
+
+
 class Queue(simpy.PriorityStore):
     def __init__(self, env, name):
         super().__init__(env)
+        self.env = env
+        self.monitor = QueueMonitor()
         self.name = name
         self.highest = 0
         self.smallest = 0
@@ -14,6 +24,7 @@ class Queue(simpy.PriorityStore):
 
     def put(self, priority, item):
         super().put(simpy.PriorityItem(priority, item))
+        self.monitor.log_queue(self.env.now, len(self))
         id_list = [p_item.item.id for p_item in self.items]
         print(f">q_{self.name}: {id_list}")
         self.highest = self.items[-1].priority
@@ -21,6 +32,26 @@ class Queue(simpy.PriorityStore):
 
     def get(self):
         return super().get()
+
+
+class CoreMonitor:
+    def __init__(self):
+        self.prev_timestamp = 0
+        self.idle_time = 0
+        self.processing_time = 0
+        self.ctx_switch_time = 0
+
+    def log_idle(self, timestamp):
+        self.idle_time += timestamp - self.prev_timestamp
+        self.prev_timestamp = timestamp
+
+    def log_processing(self, timestamp):
+        self.processing_time += timestamp - self.prev_timestamp
+        self.prev_timestamp = timestamp
+
+    def log_ctx_switch(self, timestamp):
+        self.ctx_switch_time += timestamp - self.prev_timestamp
+        self.prev_timestamp = timestamp
 
 
 class Core:
@@ -32,6 +63,7 @@ class Core:
     core_id = 0
 
     def __init__(self, env, model):
+        self.monitor = CoreMonitor()
         self.env = env
         self.model = model
         self.id = Core.core_id + 1
@@ -80,6 +112,7 @@ class Core:
         while True:
             if self.curr_task is None:
                 queue_item = yield self.runqueue.get()
+                self.monitor.log_idle(self.env.now)
                 self.curr_task = queue_item.item
 
                 self.timeslice = self.period * (self.curr_task.weight /
@@ -96,6 +129,7 @@ class Core:
 
             try:
                 yield self.env.timeout(self.timeslice)
+                self.monitor.log_processing(self.env.now)
                 print(f"@c_{self.id}: task {self.curr_task.id} preempted at "
                       f"{self.env.now}")
                 self.set_vruntime(self.curr_task)
@@ -103,9 +137,14 @@ class Core:
                     self.terminate(self.curr_task)
                 else:
                     self.schedule(self.curr_task)
-            except simpy.Interrupt:
+            except simpy.Interrupt as i:
+                if i.cause == "end":
+                    print(f"- Stopping core {self.id}")
+                    break
+
                 self.set_vruntime(self.curr_task)
                 self.sleep(self.curr_task)
 
             self.curr_task = None
             yield self.env.timeout(Core.CTX_SWITCH_DURATION)
+            self.monitor.log_ctx_switch(self.env.now)

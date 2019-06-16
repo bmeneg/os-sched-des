@@ -1,3 +1,37 @@
+import simpy
+
+
+class TaskMonitor:
+    def __init__(self):
+        self.prev_timestamp = 0
+        self.running_time = 0
+        self.ready_time = 0
+        self.interruptable_time = 0
+        self.terminated_time = 0
+        self.task_by_state = [self.running_time, self.ready_time,
+                              self.interruptable_time, self.terminated_time]
+
+    def log_task(self, task):
+        if task.state == Task.STATE_RUNNING:
+            self.running_time += task.env.now - self.prev_timestamp
+        elif task.state == Task.STATE_READY:
+            self.ready_time += task.env.now - self.prev_timestamp
+        elif task.state == Task.STATE_INTERRUPTABLE:
+            self.interruptable_time += task.env.now - self.prev_timestamp
+        elif task.state == Task.STATE_TERMINATED:
+            self.terminated_time += task.env.now - self.prev_timestamp
+        else:
+            raise Exception("Invalid task state")
+
+        self.prev_timestamp = task.env.now
+
+    def log_summary(self):
+        print(f"running time: {self.task_by_state[0]}")
+        print(f"ready time: {self.task_by_state[1]}")
+        print(f"sleep time: {self.task_by_state[2]}")
+        print(f"terminated time: {self.task_by_state[3]}")
+
+
 class TaskCreator:
     def __init__(self, env, model, core):
         self.env = env
@@ -11,7 +45,11 @@ class TaskCreator:
             task = Task(self.env, self.model.get_task_niceness(),
                         self.model.get_task_exec_time())
             self.core.schedule(task)
-            yield self.env.timeout(self.model.get_task_arrival())
+            try:
+                yield self.env.timeout(self.model.get_task_arrival())
+            except simpy.Interrupt:
+                print("- Stopping task creator")
+                break
 
 
 class Task:
@@ -27,6 +65,7 @@ class Task:
     task_id = 0
 
     def __init__(self, env, niceness, exec_time):
+        self.monitor = TaskMonitor()
         self.env = env
         self.id = Task.task_id + 1
         Task.task_id += 1
@@ -42,18 +81,28 @@ class Task:
         print(f"+t_{self.id}: arrival = {self.birth_time}, nice = {self.nice},"
               f" exec_time = {self.exec_time}")
 
+    def log(func):
+        def log_wrapper(task):
+            task.monitor.log_task(task)
+            func(task)
+        return log_wrapper
+
+    @log
     def scheduled(self):
         self.interrupted = False
         self.state = Task.STATE_READY
 
+    @log
     def running(self):
         self.interrupted = False
         self.state = Task.STATE_RUNNING
 
+    @log
     def sleep(self):
         self.interrupted = True
         self.state = Task.STATE_INTERRUPTABLE
 
+    @log
     def terminated(self):
         self.interrupted = False
         self.state = Task.STATE_TERMINATED

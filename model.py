@@ -4,7 +4,7 @@ from task import Task
 
 
 class Model:
-    SIM_DURATION = 50000  # simulation time in miliseconds
+    SIM_DURATION = 10000  # simulation time in miliseconds
     NUM_TASKS = -1  # limit number of tasks to be created
 
     @staticmethod
