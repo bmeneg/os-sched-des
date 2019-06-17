@@ -52,7 +52,6 @@ class Task:
     MAX_NICE = 19
     MIN_NICE = -20
     DEFAULT_WEIGHT = 1024
-    EXEC_TIME_AVG = 700
 
     task_id = 0
 

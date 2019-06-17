@@ -11,15 +11,21 @@ class Profile:
         self.profile = profile
         self.min_timeslice = 0
         self.avg_niceness = 0
+        self.min_arrival = 0
+        self.exec_time_avg = 0
 
     def set_profile(self, profile):
         self.profile = profile
         if self.profile == Profile.SERVER:
             self.min_timeslice = 10
             self.avg_niceness = -10
+            self.min_arrival = 250
+            self.exec_time_avg = 700
         elif self.profile == Profile.WORKSTATION:
             self.min_timeslice = 1
             self.avg_niceness = 0
+            self.min_arrival = 500
+            self.exec_time_avg = 1400
 
     def get_min_timeslice(self):
         return self.min_timeslice
@@ -27,10 +33,16 @@ class Profile:
     def get_avg_niceness(self):
         return self.avg_niceness
 
+    def get_min_arrival(self):
+        return self.min_arrival
+
+    def get_exec_time_avg(self):
+        return self.exec_time_avg
+
 
 class Model:
-    SIM_DURATION = 10000  # simulation time in miliseconds
-    NUM_TASKS = -1  # limit number of tasks to be created
+    EXPERIMENTS = 50
+    SIM_DURATION = 100000  # simulation time in miliseconds
 
     profile = None
 
@@ -40,11 +52,11 @@ class Model:
 
     @staticmethod
     def get_task_arrival():
-        return int(random.uniform(500, 1000))
+        return int(random.uniform(Model.profile.get_min_arrival(), 1000))
 
     @staticmethod
     def get_task_exec_time():
-        return int(random.expovariate(1 / Task.EXEC_TIME_AVG))
+        return int(random.expovariate(1 / Model.profile.get_exec_time_avg()))
 
     @staticmethod
     def get_task_niceness():
