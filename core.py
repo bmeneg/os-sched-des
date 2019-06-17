@@ -69,6 +69,7 @@ class Core:
         self.id = Core.core_id + 1
         self.timeslice = Core.DEFAULT_TIMESLICE
         self.period = Core.DEFAULT_PERIOD
+        self.min_timeslice = self.model.profile.get_min_timeslice()
         self.runqueue = Queue(env, "run")
         self.sleepqueue = Queue(env, "sleep")
         self.sink = Queue(env, "sink")
@@ -112,15 +113,20 @@ class Core:
         while True:
             if self.curr_task is None:
                 queue_item = yield self.runqueue.get()
-                self.monitor.log_idle(self.env.now)
                 self.curr_task = queue_item.item
+                self.monitor.log_idle(self.env.now)
 
-                self.timeslice = self.period * (self.curr_task.weight /
-                                                self.runqueue.weight)
+                new_timeslice = self.period * (self.curr_task.weight /
+                                               self.runqueue.weight)
+                if new_timeslice < self.min_timeslice:
+                    self.timeslice = self.min_timeslice
+                else:
+                    self.timeslice = new_timeslice
+
                 self.runqueue.weight -= self.curr_task.weight
                 termination = self.curr_task.sum_exec_time + self.timeslice
                 if self.curr_task.exec_time < termination:
-                    self.timeslice = (self.curr_task.exec_time -
+                    self.timeslice = (1 + self.curr_task.exec_time -
                                       self.curr_task.sum_exec_time)
                 self.curr_task.exec_start = self.env.now
                 self.curr_task.running()
@@ -137,11 +143,7 @@ class Core:
                     self.terminate(self.curr_task)
                 else:
                     self.schedule(self.curr_task)
-            except simpy.Interrupt as i:
-                if i.cause == "end":
-                    print(f"- Stopping core {self.id}")
-                    break
-
+            except simpy.Interrupt:
                 self.set_vruntime(self.curr_task)
                 self.sleep(self.curr_task)
 

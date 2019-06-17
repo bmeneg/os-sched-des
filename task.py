@@ -1,6 +1,3 @@
-import simpy
-
-
 class TaskMonitor:
     def __init__(self):
         self.prev_timestamp = 0
@@ -8,8 +5,6 @@ class TaskMonitor:
         self.ready_time = 0
         self.interruptable_time = 0
         self.terminated_time = 0
-        self.task_by_state = [self.running_time, self.ready_time,
-                              self.interruptable_time, self.terminated_time]
 
     def log_task(self, task):
         if task.state == Task.STATE_RUNNING:
@@ -25,11 +20,12 @@ class TaskMonitor:
 
         self.prev_timestamp = task.env.now
 
-    def log_summary(self):
-        print(f"running time: {self.task_by_state[0]}")
-        print(f"ready time: {self.task_by_state[1]}")
-        print(f"sleep time: {self.task_by_state[2]}")
-        print(f"terminated time: {self.task_by_state[3]}")
+    @staticmethod
+    def log_summary(task_monitor):
+        print(f"running time: {task_monitor.running_time}")
+        print(f"ready time: {task_monitor.ready_time}")
+        print(f"sleep time: {task_monitor.interruptable_time}")
+        print(f"terminated time: {task_monitor.terminated_time}")
 
 
 class TaskCreator:
@@ -45,11 +41,7 @@ class TaskCreator:
             task = Task(self.env, self.model.get_task_niceness(),
                         self.model.get_task_exec_time())
             self.core.schedule(task)
-            try:
-                yield self.env.timeout(self.model.get_task_arrival())
-            except simpy.Interrupt:
-                print("- Stopping task creator")
-                break
+            yield self.env.timeout(self.model.get_task_arrival())
 
 
 class Task:

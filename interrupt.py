@@ -1,6 +1,3 @@
-import simpy
-
-
 class InterruptMonitor:
     def __init__(self):
         self.sleep = []
@@ -27,24 +24,14 @@ class Interrupt:
 
     def sleep(self):
         while True:
-            try:
-                yield self.env.timeout(self.model.get_sleep_event_time())
-            except simpy.Interrupt:
-                print("- Stopping interrupt generator")
-                break
-
+            yield self.env.timeout(self.model.get_sleep_event_time())
             if self.core.curr_task is not None:
                 self.core.action.interrupt()
                 self.monitor.log_sleep(self.env.now)
 
     def awake(self):
         while True:
-            try:
-                yield self.env.timeout(self.model.get_awake_event_time())
-            except simpy.Interrupt:
-                print("- Stopping interrupt generator")
-                break
-
+            yield self.env.timeout(self.model.get_awake_event_time())
             if len(self.core.sleepqueue):
                 queue_item = yield self.core.sleepqueue.get()
                 task = queue_item.item
