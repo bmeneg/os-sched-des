@@ -7,6 +7,12 @@ verify_ssl = true
 
 [packages]
 simpy = "*"
+statsmodels = "*"
+pandas = "*"
+patsy = "*"
+scipy = "*"
+numpy = "*"
+matplotlib = "*"
 
 [requires]
 python_version = "3.7"
